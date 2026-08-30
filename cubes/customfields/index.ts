@@ -243,11 +243,16 @@ const summary = (d: DefRow): SummaryRow => ({
   ],
 })
 
+// NOT an entity cube, deliberately. The entity mediation shapes an entity cube's surface:
+// the no-param GET must BE the entity list (per-row visibility) and path parameters are the
+// entity's own id. This cube's surface is not that: definitions are admin metadata, and the
+// values lookup addresses ANOTHER cube's row, which an entity id here would misname. Every
+// handler keeps its own permission gate instead — exactly the gates the pre-QWB-15 original
+// used. ENTITY stays as the store row label for the definitions table.
 export const cube = defineCube(group, {
   manifest: {
     name: "customfields",
     tables: [DEFS, VALUES],
-    entity: ENTITY,
     sortable: ["targetCube", "name", "label", "fieldType", "position", "createdAt"],
     requiresAuth: true,
     permissions: [
