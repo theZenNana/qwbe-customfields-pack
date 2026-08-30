@@ -9,7 +9,7 @@
 import { Effect } from "effect"
 import { requirePermission } from "qwbe-core/auth"
 import { BadRequest } from "qwbe-core/errors"
-import { displayValue, type DefRow, orphanValues, reject } from "./schema.ts"
+import { displayValue, orphanValues, reject } from "./schema.ts"
 import { customFieldsTool, definitionsFor, type PackTools, type Snapshot } from "./context.ts"
 
 /** Definitions plus the row's current values, which is what a form actually needs. */
@@ -86,6 +86,6 @@ export const valuesHandlers = (tools: PackTools, _snapshot: Snapshot) => ({
       const cube = urlParams.cube
       const defs = yield* definitionsFor(tools.store, cube)
       const rows = yield* customFieldsTool(tools).rows(cube)
-      return { cube, orphans: orphanValues(defs as ReadonlyArray<DefRow>, rows) }
+      return { cube, orphans: orphanValues(defs, rows) }
     }),
 })
