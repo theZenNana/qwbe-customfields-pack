@@ -31,7 +31,7 @@
 
 import { HttpApiEndpoint, HttpApiGroup, HttpApiSchema } from "@effect/platform"
 import { Effect, Schema } from "effect"
-import { Authorization, requirePermission } from "qwbe-core/auth"
+import { Authorization } from "qwbe-core/auth"
 import { defineCube, type CubeTools } from "qwbe-core/cube"
 import { BadRequest, Forbidden, NotFound } from "qwbe-core/errors"
 import { PageOf } from "qwbe-core/http"
