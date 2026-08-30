@@ -62,28 +62,28 @@ describe("definition validation", () => {
 describe("orphan values (QWB-46 step 5)", () => {
   it("reports a custom key no active definition names", () => {
     const rows = [
-      { id: "cont-1", custom: { cnp: "123", gone: "42" } },
+      { id: "cont-1", custom: { cnp: "123", gone: "42" }, deleted: false },
     ]
     const orphans = orphanValues([def()], rows)
-    assert.deepEqual(orphans, [{ rowId: "cont-1", name: "gone", value: "42" }])
+    assert.deepEqual(orphans, [{ rowId: "cont-1", name: "gone", value: "42", deleted: false }])
   })
 
   it("values of a deleted definition stay in the rows and are reported, never deleted", () => {
     // After `birthday` is deleted, no active definition names it -- so it is an orphan.
-    const rows = [{ id: "cont-2", custom: { birthday: "1996-02-29" } }]
+    const rows = [{ id: "cont-2", custom: { birthday: "1996-02-29" }, deleted: false }]
     const orphans = orphanValues([def({ name: "cnp" })], rows)
-    assert.deepEqual(orphans, [{ rowId: "cont-2", name: "birthday", value: "1996-02-29" }])
+    assert.deepEqual(orphans, [{ rowId: "cont-2", name: "birthday", value: "1996-02-29", deleted: false }])
   })
 
   it("a soft-deleted definition still protects nothing: only ACTIVE definitions count", () => {
-    const rows = [{ id: "cont-3", custom: { cnp: "123" } }]
+    const rows = [{ id: "cont-3", custom: { cnp: "123" }, deleted: false }]
     const orphans = orphanValues([def({ deleted: true })], rows)
     assert.equal(orphans.length, 0)
   })
 
   it("non-string values are rendered as text in the report", () => {
-    const rows = [{ id: "cont-4", custom: { gone: 7 } }]
-    assert.deepEqual(orphanValues([], rows), [{ rowId: "cont-4", name: "gone", value: "7" }])
+    const rows = [{ id: "cont-4", custom: { gone: 7 }, deleted: true }]
+    assert.deepEqual(orphanValues([], rows), [{ rowId: "cont-4", name: "gone", value: "7", deleted: true }])
   })
 
   it("displayValue renders nothing for absent or null values", () => {

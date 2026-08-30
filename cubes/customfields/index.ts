@@ -143,7 +143,10 @@ export const cube = defineCube(group, {
     // Load the definitions snapshot asynchronously: the kernel's provider registry is a
     // synchronous read, and metadata is served per request, so the first catalogue call after
     // boot races this load at worst and shows no custom fields until it lands.
-    void refreshSnapshot(store, snapshot)
+    // Review fix 5 (QWB-46): `void effect` DISCARDS the lazy Effect -- it never ran, so after
+    // every restart the snapshot stayed empty and the catalogue published zero custom fields.
+    // Run it for real: the same fire-and-forget boot layer the notes cube uses.
+    Effect.runFork(refreshSnapshot(store, snapshot))
 
     // The kernel publishes these definitions as custom metadata of each target cube.
     customFieldsTool(tools).register((cube) =>

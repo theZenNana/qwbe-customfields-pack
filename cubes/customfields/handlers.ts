@@ -52,6 +52,15 @@ export const definitionHandlers = (tools: PackTools, snapshot: Snapshot) => {
         if (p.targetCube === "customfields") {
           return yield* Effect.fail(new BadRequest({ message: "customfields cannot add fields to itself" }))
         }
+        // Review fix 9 (QWB-46): a definition named like a DECLARED field can never hold a
+        // value -- the kernel's fold never touches declared keys -- and publishing it would
+        // advertise two fields under one name. Refused at the door.
+        const published = catalogue().find((c) => c.name === p.targetCube)?.metadata?.fields ?? []
+        if (published.some((f) => f.name === p.name)) {
+          return yield* Effect.fail(
+            new BadRequest({ message: `"${p.name}" is already a declared field on ${p.targetCube}` }),
+          )
+        }
         if (p.fieldType === "select" && p.options.length === 0) {
           return yield* Effect.fail(new BadRequest({ message: `a "select" field needs at least one option` }))
         }

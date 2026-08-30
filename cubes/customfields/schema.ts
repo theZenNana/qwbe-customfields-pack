@@ -113,6 +113,8 @@ export const OrphanValue = Schema.Struct({
   rowId: Schema.String,
   name: Schema.String,
   value: Schema.String,
+  /** Review fix 11 (QWB-46): the row is soft-deleted -- the value is still stored data. */
+  deleted: Schema.Boolean,
 }).annotations({ identifier: "OrphanValue" })
 
 export const OrphansReport = Schema.Struct({
@@ -182,17 +184,23 @@ export const toDefinition = (d: DefRow) => ({
 /**
  * The orphan computation, pure so it is testable without a store: every `custom` key on a row
  * that no active definition names is an orphan. Values are REPORTED, never deleted -- deleting
- * a definition must not damage existing rows (QWB-46 step 5).
+ * a definition must not damage existing rows (QWB-46 step 5). Since review fixes 1 and 2 gate
+ * every write path on an active definition, an orphan is a value whose DEFINITION was deleted;
+ * the row's `deleted` flag says whether the row itself is gone too.
  */
 export const orphanValues = (
   defs: ReadonlyArray<DefRow>,
-  rows: ReadonlyArray<{ readonly id: string; readonly custom: Record<string, unknown> }>,
-): ReadonlyArray<{ rowId: string; name: string; value: string }> => {
+  rows: ReadonlyArray<{
+    readonly id: string
+    readonly custom: Record<string, unknown>
+    readonly deleted: boolean
+  }>,
+): ReadonlyArray<{ rowId: string; name: string; value: string; deleted: boolean }> => {
   const known = new Set(defs.map((d) => d.name))
-  const out: Array<{ rowId: string; name: string; value: string }> = []
+  const out: Array<{ rowId: string; name: string; value: string; deleted: boolean }> = []
   for (const row of rows) {
     for (const [name, value] of Object.entries(row.custom)) {
-      if (!known.has(name)) out.push({ rowId: row.id, name, value: displayValue(value) })
+      if (!known.has(name)) out.push({ rowId: row.id, name, value: displayValue(value), deleted: row.deleted })
     }
   }
   return out

@@ -43,7 +43,10 @@ export const valuesHandlers = (tools: PackTools, _snapshot: Snapshot) => ({
   // fields does this row have" either way.
   valuesFor: ({ urlParams }: { urlParams: { readonly cube: string; readonly rowId: string } }) =>
     Effect.gen(function* () {
-      yield* requirePermission("customfields:read")
+      // Review fix 12 (QWB-46): the lookup reads ANOTHER cube's rows, so it rides on THAT
+      // cube's own read permission -- `customfields:read` alone would let a reader see custom
+      // values on rows the target cube would refuse them.
+      yield* requirePermission(`${urlParams.cube}:read`)
       return yield* rowFields(tools, urlParams.cube, urlParams.rowId)
     }),
 
