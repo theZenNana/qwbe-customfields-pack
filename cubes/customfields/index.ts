@@ -118,12 +118,25 @@ const RowFields = Schema.Struct({
 }).annotations({ identifier: "RowFields" })
 
 /**
- * Values arrive as a map of name to string.
+ * Values arrive as a map of name to string, addressed by the target cube and row id.
  *
  * Everything is a string on the wire — including numbers and booleans — because the type is the
  * definition's business, not the transport's. It is checked here before anything is stored.
+ *
+ * The lookup and the address live in the URL params and the body rather than the path: the
+ * current entity enforcement gives every entity-cube endpoint exactly one path parameter (the
+ * entity's own id), and a values address belongs to ANOTHER cube's row, so it cannot be a path
+ * segment here. Reshaped on the 2026-08-30 restore; the old path form has no live callers —
+ * the old web screens were not restored.
  */
+const ValuesLookup = Schema.Struct({
+  cube: Schema.String,
+  rowId: Schema.String,
+}).annotations({ identifier: "ValuesLookup" })
+
 const ValuesWrite = Schema.Struct({
+  cube: Schema.String,
+  rowId: Schema.String,
   values: Schema.Record({ key: Schema.String, value: Schema.String }),
 }).annotations({ identifier: "ValuesWrite" })
 
@@ -175,16 +188,13 @@ const group = HttpApiGroup.make("customfields")
       .addError(Forbidden),
   )
   .add(
-    HttpApiEndpoint.get(
-      "valuesFor",
-    )`/customfields/values/${HttpApiSchema.param("cube", Schema.String)}/${HttpApiSchema.param("rowId", Schema.String)}`
+    HttpApiEndpoint.get("valuesFor")`/customfields/values`
+      .setUrlParams(ValuesLookup)
       .addSuccess(RowFields)
       .addError(Forbidden),
   )
   .add(
-    HttpApiEndpoint.put(
-      "setValues",
-    )`/customfields/values/${HttpApiSchema.param("cube", Schema.String)}/${HttpApiSchema.param("rowId", Schema.String)}`
+    HttpApiEndpoint.put("setValues")`/customfields/values`
       .setPayload(ValuesWrite)
       .addSuccess(RowFields)
       .addError(BadRequest)
@@ -416,19 +426,20 @@ export const cube = defineCube(group, {
             return { removed: `${current.targetCube}.${current.name}` }
           }),
 
-        valuesFor: ({ path }) =>
+        valuesFor: ({ urlParams }) =>
           Effect.gen(function* () {
             yield* requirePermission("customfields:read")
             // No 404 for a row that does not exist: this cube cannot check another cube's rows
             // without reaching into it, and an empty field list is the honest answer to "what
             // extra fields does this row have" either way.
-            return yield* rowFields(path.cube, path.rowId)
+            return yield* rowFields(urlParams.cube, urlParams.rowId)
           }),
 
-        setValues: ({ path, payload }) =>
+        setValues: ({ payload }) =>
           Effect.gen(function* () {
             yield* requirePermission("customfields:values")
-            const defs = yield* definitionsFor(path.cube)
+            const { cube, rowId } = payload
+            const defs = yield* definitionsFor(cube)
             const byName = new Map(defs.map((d) => [d.name, d]))
 
             // Every refusal happens BEFORE the first write, so a rejected request leaves nothing
@@ -437,7 +448,7 @@ export const cube = defineCube(group, {
             for (const [name, value] of Object.entries(payload.values)) {
               const def = byName.get(name)
               if (!def) {
-                problems.push(`"${name}" is not a field on ${path.cube}`)
+                problems.push(`"${name}" is not a field on ${cube}`)
                 continue
               }
               const why = reject(def, value)
@@ -447,7 +458,7 @@ export const cube = defineCube(group, {
               return yield* Effect.fail(new BadRequest({ message: problems.join("; ") }))
             }
 
-            const owner = ownerKey(path.cube, path.rowId)
+            const owner = ownerKey(cube, rowId)
             const existing = (yield* store.all<ValueRow>(VALUES)).filter((v) => v.owner === owner)
             for (const [name, value] of Object.entries(payload.values)) {
               const found = existing.find((v) => v.name === name)
@@ -456,19 +467,19 @@ export const cube = defineCube(group, {
               } else {
                 yield* store.insert(VALUES, "CustomFieldValue", "cfv", {
                   owner,
-                  targetCube: path.cube,
-                  rowId: path.rowId,
+                  targetCube: cube,
+                  rowId,
                   name,
                   value,
                 })
               }
             }
             yield* bus.publish("customfields.valueSet", {
-              cube: path.cube,
-              rowId: path.rowId,
+              cube,
+              rowId,
               names: Object.keys(payload.values),
             })
-            return yield* rowFields(path.cube, path.rowId)
+            return yield* rowFields(cube, rowId)
           }),
       },
 
