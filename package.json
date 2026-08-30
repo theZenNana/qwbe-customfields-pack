@@ -1,0 +1,19 @@
+{
+  "name": "qwbe-customfields-pack",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test source-contract.test.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@effect/platform": "^0.96.0",
+    "effect": "^3.21.0",
+    "qwbe-core": "file:../../../qwbe/core"
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.0",
+    "typescript": "^5.7.0"
+  }
+}

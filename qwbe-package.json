@@ -1,0 +1,6 @@
+{
+  "name": "customfields-pack",
+  "kind": "plugin",
+  "summary": "Extra fields for any cube, defined at runtime by an administrator.",
+  "cubes": ["customfields"]
+}
