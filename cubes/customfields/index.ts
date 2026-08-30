@@ -252,6 +252,10 @@ const summary = (d: DefRow): SummaryRow => ({
 export const cube = defineCube(group, {
   manifest: {
     name: "customfields",
+    // The admin screen at web/app/customfields is this cube's own surface, not the generic
+    // list; declaring `screen` is what makes the sidebar render it as a link instead of a
+    // non-clickable "No screen" entry.
+    screen: true,
     tables: [DEFS, VALUES],
     sortable: ["targetCube", "name", "label", "fieldType", "position", "createdAt"],
     requiresAuth: true,
