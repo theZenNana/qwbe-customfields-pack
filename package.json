@@ -4,13 +4,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test source-contract.test.mjs",
+    "test": "node --test source-contract.test.mjs cubes/customfields/logic.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@effect/platform": "^0.96.0",
     "effect": "^3.21.0",
-    "qwbe-core": "file:../../../qwbe/core"
+    "qwbe-core": "file:../../qwbe-cf/core"
   },
   "devDependencies": {
     "@types/node": "^26.0.0",
