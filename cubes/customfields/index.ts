@@ -388,7 +388,7 @@ export const cube = defineCube(group, {
             if (merged.fieldType === "select" && (merged.options?.length ?? 0) === 0) {
               return yield* Effect.fail(new BadRequest({ message: `a "select" field needs at least one option` }))
             }
-            return (yield* store.update(DEFS, path.id, payload as Record<string, unknown>)) as unknown as DefRow
+            return (yield* store.update(DEFS, path.id, payload)) as DefRow
           }),
 
         remove: ({ path }) =>
