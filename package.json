@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test source-contract.test.mjs",
+    "test": "node --test source-contract.test.mjs cubes/customfields/logic.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

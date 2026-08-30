@@ -2,7 +2,7 @@ import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
 import { describe, it } from "node:test"
 
-const sources = ["cubes/customfields/index.ts"]
+const sources = ["cubes/customfields/index.ts", "cubes/customfields/schema.ts", "cubes/customfields/handlers.ts", "cubes/customfields/values.ts", "cubes/customfields/context.ts"]
 
 describe("Customfields source package boundary", () => {
   it("declares one top-level cube and loads", async () => {
@@ -15,8 +15,16 @@ describe("Customfields source package boundary", () => {
     assert.equal(cube.manifest.entity, undefined)
     assert.deepEqual(
       cube.manifest.permissions.map((p) => p.name),
-      ["customfields:read", "customfields:write", "customfields:values"],
+      // QWB-46: the separate `customfields:values` gate is gone -- values are written through
+      // the target cube's own API, so this cube only reads (validate pre-flight, lookups) and
+      // writes definitions. The orphan report rides on the admin write gate.
+      ["customfields:read", "customfields:write"],
     )
+    // QWB-46: the pack declares the capability that makes values-in-rows possible: the kernel
+    // hands the customFields tool (register definitions, read target rows for orphans).
+    assert.equal(cube.manifest.providesCustomFields, true)
+    // No sidecar values table anymore: definitions only.
+    assert.deepEqual(cube.manifest.tables, ["customfield_defs"])
   })
 
   it("uses only public qwbe-core subpaths", () => {
